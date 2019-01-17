@@ -617,36 +617,253 @@ char *yytext;
 #line 1 "scanner.l"
 /*
 * Compiler Design Project Phase 1 - Scanner for C-language
-*
-* File		:  tables.h
-*
-* Description	:  This file contains functions related to hash organised symbol and constant tables.
-*	       	   The functions implemented are:
-*		   
-*
-*
 * Authors	:  Aditi Gupta - 16CO202, S Chethana Vaisali - 16CO255
 * Date		: 14th January 2019
-Pre-processor instructions
-• Single-line comments
-• Multi-line comments
-• Errors for unmatched comments
-• Errors for nested comments
-• Parentheses (all types)
-• Operators
-• Literals (integer, float, string)
-• Errors for unclean integers and floating point numbers
-• Errors for incomplete strings
-• Keywords
-• Identifiers
-
 */
-#line 29 "scanner.l"
+#line 8 "scanner.l"
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "tables.h"
-#include "tokens.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <limits.h>
+#include <string.h>
+
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT "\x1B[37m"
+
+#define HASH_TABLE_SIZE 100
+
+
+// struct to hold entry
+struct node
+{
+	char* lexeme;
+	int token;
+	struct node *next;
+};
+
+
+//Implementing djb2 hash function
+unsigned int get_hash(char *str)
+{
+	unsigned int hash=5381;
+	int c;
+	
+	while((c=*str++))
+		hash=((hash << 5) + hash) + c;
+	return hash % HASH_TABLE_SIZE;
+}
+
+
+//Create a new hash table
+struct node** create_table()
+{
+	struct node** table_ptr =  NULL;
+	
+	table_ptr=(struct node**)malloc(sizeof(struct node*)*HASH_TABLE_SIZE);
+	if(table_ptr==NULL)
+	{
+		printf("\n Cannot alocate memory for the table");
+		exit(1);
+	}
+
+	int i;
+	
+	//Initialise all entries as NULL
+	for( i = 0; i < HASH_TABLE_SIZE ; i++ )
+	{
+		table_ptr[i] = NULL ;
+	}	
+
+	return table_ptr;
+}
+
+
+//Create a node
+struct node* create( char *lexeme, int token_name )
+{
+	struct node* newentry;
+
+	/* Allocate space for newentry */
+	if( ( newentry = malloc( sizeof( struct node* ) ) ) == NULL ) {
+		return NULL;
+	}
+	/* Copy lexeme to newentry location using strdup (string-duplicate). Return NULL if it fails */
+	if( ( newentry->lexeme = strdup( lexeme ) ) == NULL ) {
+		return NULL;
+	}
+
+	newentry->token = token_name;
+	newentry->next = NULL;
+
+	return newentry;
+}
+	 
+
+/* Search for an entry given a lexeme. Return a pointer to the entry of the lexeme if exists, else return NULL */
+struct node* search( struct node** table_ptr , char* lexeme )
+{
+	uint32_t idx = 0;
+	struct node* ptr;
+
+	//get the index of this lexeme as per the hash function
+	idx = get_hash ( lexeme );
+
+	ptr = table_ptr[idx];
+
+	while( ptr != NULL && strcmp( lexeme, ptr->lexeme ) != 0)
+		ptr = ptr->next;
+
+	if( ptr ==NULL)
+		return NULL;
+	else
+		return ptr;
+} 
+
+
+//Insert a node into the hash table
+void insert( struct node** hash_table_ptr, char* lexeme, int token_name )
+{
+	if( search( hash_table_ptr, lexeme ) != NULL) // If lexeme already exists, don't insert, return
+	    return;
+
+	uint32_t idx;
+	struct node* newentry = NULL;
+	struct node* head = NULL;
+
+	idx = get_hash( lexeme ); // Get the index for this lexeme based on the hash function
+	newentry = create( lexeme, token_name ); // Create an entry using the <lexeme, token> pair
+
+	if(newentry == NULL) // In case there was some error while executing create_entry()
+	{
+		printf("Insert failed. New entry could not be created.");
+		exit(1);
+	}
+
+	head = hash_table_ptr[idx]; // get the head entry at this index
+
+	if(head == NULL) // This is the first lexeme that matches this hash index 
+	{
+		hash_table_ptr[idx] = newentry;
+	}
+	else // if not, add this entry to the head
+	{
+		newentry->next = hash_table_ptr[idx];
+		hash_table_ptr[idx] = newentry;
+	}
+}
+
+//Display all the entries of a hash table
+
+void display ( struct node** table_ptr)
+{
+	int i;
+
+	struct node* ptr;
+
+	printf("%s\n=====================================================================================================\n",KCYN);
+
+    	printf("%s\n\t%-50s %-50s\n",KYEL,"Token", "Token type");
+
+    	printf("%s=====================================================================================================\n%s\n",KCYN,KNRM);
+
+	for (i = 0; i < HASH_TABLE_SIZE ; i++ )
+	{
+		ptr = table_ptr[i];
+
+		while( ptr != NULL )
+		{
+			char token_type[100];
+			if(ptr->token==500)
+				strcpy(token_type,"IDENTIFIER");
+			else if(ptr->token==400)
+				strcpy(token_type,"HEX_CONSTANT");
+			else if(ptr->token==401)
+				strcpy(token_type,"DEC_CONSTANT");
+			else if(ptr->token==402)
+				strcpy(token_type,"HEADER FILE");
+			else if(ptr->token==403)
+				strcpy(token_type,"STRING");	
+			printf("\t%-50s %-50s \n", ptr->lexeme,  token_type);
+			
+			ptr = ptr->next;
+		}
+	}
+}
+
+enum keywords
+{
+  INT=100,
+  LONG,
+  LONG_LONG,
+  SHORT,
+  SIGNED,
+  UNSIGNED,
+  FOR,
+  WHILE,
+  BREAK,
+  CONTINUE,
+  RETURN,
+  CHAR,
+  IF,
+  ELSE
+};
+
+enum operators
+{
+  DECREMENT=200,
+  INCREMENT,
+  PTR_SELECT,
+  LOGICAL_AND,
+  LOGICAL_OR,
+  LS_THAN_EQ,
+  GR_THAN_EQ,
+  ADD_AND_ASS,
+  SUB_AND_ASS,
+  EQ,
+  NOT_EQ,
+  ASSIGN,
+  MINUS,
+  PLUS,
+  STAR,
+  MODULO,
+  LS_THAN,
+  GR_THAN
+};
+
+enum special_symbols
+{
+  DELIMITER=300,
+  OPEN_BRACES,
+  CLOSE_BRACES,
+  COMMA,
+  OPEN_PAR,
+  CLOSE_PAR,
+  OPEN_SQ_BRKT,
+  CLOSE_SQ_BRKT,
+  FW_SLASH
+};
+
+enum constants
+{
+  HEX_CONSTANT=400,
+  DEC_CONSTANT,
+  HEADER_FILE,
+  STRING
+};
+
+enum IDENTIFIER
+{
+  IDENTIFIER=500
+};
 
 
 struct node** symbol_table;
@@ -656,7 +873,7 @@ int cmnt_strt = 0;
 /* Exclusive states */
 
 
-#line 660 "lex.yy.c"
+#line 877 "lex.yy.c"
 
 #define INITIAL 0
 #define CMNT 1
@@ -879,12 +1096,12 @@ YY_DECL
 		}
 
 	{
-#line 54 "scanner.l"
+#line 271 "scanner.l"
 
 
  /* Keywords*/
 
-#line 888 "lex.yy.c"
+#line 1105 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -950,166 +1167,166 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 58 "scanner.l"
+#line 275 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword int",INT);}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 59 "scanner.l"
+#line 276 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword long",LONG);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 60 "scanner.l"
+#line 277 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword char",CHAR);}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 61 "scanner.l"
+#line 278 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword long long",LONG_LONG);}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 62 "scanner.l"
+#line 279 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword short",SHORT);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 63 "scanner.l"
+#line 280 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword signed",SIGNED);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 64 "scanner.l"
+#line 281 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword unsigned",UNSIGNED);}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 65 "scanner.l"
+#line 282 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword for",FOR);}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 66 "scanner.l"
+#line 283 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword while",WHILE);}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 67 "scanner.l"
+#line 284 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword break",BREAK);}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 68 "scanner.l"
+#line 285 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword continue",CONTINUE);}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 69 "scanner.l"
+#line 286 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword if",IF);}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 70 "scanner.l"
+#line 287 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword else",ELSE);}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 71 "scanner.l"
+#line 288 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"keyword return",RETURN);}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 73 "scanner.l"
+#line 290 "scanner.l"
 {printf("\t%-30s %-40s %3d\n", yytext,"Identifier",IDENTIFIER);
                                   insert( symbol_table,yytext,IDENTIFIER );}				
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 76 "scanner.l"
+#line 293 "scanner.l"
 ;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 77 "scanner.l"
+#line 294 "scanner.l"
 {printf("\t%-30s %-40s %3d\n", yytext,"Hex Constant",HEX_CONSTANT);
 									insert( constant_table,yytext,HEX_CONSTANT);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 79 "scanner.l"
+#line 296 "scanner.l"
 {printf("\t%-30s %-40s %3d\n", yytext,"Decimal Constant",DEC_CONSTANT);
 									insert( constant_table,yytext,DEC_CONSTANT);}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 81 "scanner.l"
+#line 298 "scanner.l"
 {cmnt_strt = yylineno; BEGIN CMNT;}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 82 "scanner.l"
+#line 299 "scanner.l"
 ;
 	YY_BREAK
 case 21:
 /* rule 21 can match eol */
 YY_RULE_SETUP
-#line 83 "scanner.l"
+#line 300 "scanner.l"
 {yylineno++;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 84 "scanner.l"
+#line 301 "scanner.l"
 {BEGIN INITIAL;}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 85 "scanner.l"
+#line 302 "scanner.l"
 {printf("%s\nLine %3d: Nested comments are not valid!\n%s\n",KRED,yylineno,KNRM);}
 	YY_BREAK
 case YY_STATE_EOF(CMNT):
-#line 86 "scanner.l"
+#line 303 "scanner.l"
 {printf("%s\nLine %3d: Unterminated comment\n%s\n", KRED,cmnt_strt,KNRM); yyterminate();}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 87 "scanner.l"
+#line 304 "scanner.l"
 {BEGIN PREPROC;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 88 "scanner.l"
-{printf("\t#include%-22s %-40s %3d\n",yytext,"Header File",HEADER_FILE);}
+#line 305 "scanner.l"
+{printf("\t#include%-22s %-40s %3d\n",yytext,"Header File",HEADER_FILE); BEGIN INITIAL;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 89 "scanner.l"
+#line 306 "scanner.l"
 ;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 90 "scanner.l"
-{printf("\t#include%-22s %-40s %3d\n",yytext,"Header File",HEADER_FILE);}
+#line 307 "scanner.l"
+{printf("\t#include%-22s %-40s %3d\n",yytext,"Header File",HEADER_FILE); BEGIN INITIAL;}
 	YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 91 "scanner.l"
+#line 308 "scanner.l"
 {yylineno++; BEGIN INITIAL;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 92 "scanner.l"
-{printf("%s\n%40s%10d%s\n%s",KRED,"Illegal header file format at",yylineno,"\n",KNRM);}
+#line 309 "scanner.l"
+{printf("%s\n%40s%10d%s\n%s",KRED,"Illegal header file format at",yylineno,"\n",KNRM); BEGIN INITIAL;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 93 "scanner.l"
+#line 310 "scanner.l"
 ;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 95 "scanner.l"
+#line 312 "scanner.l"
 {
 
   if(yytext[yyleng-2]=='\\') /* check if it was an escaped quote */
@@ -1126,166 +1343,166 @@ case 32:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 106 "scanner.l"
+#line 323 "scanner.l"
 {printf("%s\nLine %3d:Unterminated string %s\n%s\n",KRED,yylineno,yytext,KNRM);}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 107 "scanner.l"
+#line 324 "scanner.l"
 {printf("%s\nLine %3d: Illegal identifier name %s\n%s\n",KRED,yylineno,yytext,KNRM);}
 	YY_BREAK
 case 34:
 /* rule 34 can match eol */
 YY_RULE_SETUP
-#line 108 "scanner.l"
+#line 325 "scanner.l"
 {yylineno++;}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 109 "scanner.l"
+#line 326 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Decrement Operator ",DECREMENT);}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 110 "scanner.l"
+#line 327 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Increment Operator ",INCREMENT);}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 111 "scanner.l"
+#line 328 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Addition assignment operator ",ADD_AND_ASS);}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 112 "scanner.l"
+#line 329 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Subtraction assignment operator ",SUB_AND_ASS);}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 113 "scanner.l"
+#line 330 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Indirection Operator ",PTR_SELECT);}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 114 "scanner.l"
+#line 331 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Logical AND",LOGICAL_AND);}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 115 "scanner.l"
+#line 332 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Logical OR",LOGICAL_OR);}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 116 "scanner.l"
+#line 333 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Less than equal to",LS_THAN_EQ);}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 117 "scanner.l"
+#line 334 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Greater than equal to",GR_THAN_EQ);}
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 118 "scanner.l"
+#line 335 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Equal to",EQ);}
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 119 "scanner.l"
+#line 336 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Not equal to",NOT_EQ);}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 120 "scanner.l"
+#line 337 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Delimiter",DELIMITER);}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 121 "scanner.l"
+#line 338 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Open Braces",OPEN_BRACES);}
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 122 "scanner.l"
+#line 339 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Close braces",CLOSE_BRACES);}
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 123 "scanner.l"
+#line 340 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Comma",COMMA);}
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 124 "scanner.l"
+#line 341 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Assignment",ASSIGN);}
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 125 "scanner.l"
+#line 342 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Open bracket",OPEN_PAR);}
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 126 "scanner.l"
+#line 343 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Closed bracket",CLOSE_PAR);}
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 127 "scanner.l"
+#line 344 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Open square bracket",OPEN_SQ_BRKT);}
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 128 "scanner.l"
+#line 345 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Closed square bracket",CLOSE_SQ_BRKT);}
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 129 "scanner.l"
+#line 346 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator minus",MINUS);}
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 130 "scanner.l"
+#line 347 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator plus",PLUS);}
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 131 "scanner.l"
+#line 348 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator star",STAR);}
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 132 "scanner.l"
+#line 349 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator forward slash",FW_SLASH);}
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 133 "scanner.l"
+#line 350 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator modulo",MODULO);}
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 134 "scanner.l"
+#line 351 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator less than",LS_THAN);}
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 135 "scanner.l"
+#line 352 "scanner.l"
 {printf("\t%-30s %-40s %3d\n",yytext,"Operator greater than",GR_THAN);}
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 136 "scanner.l"
-{printf("Line %3d: Illegal character %s\n",yylineno,yytext);}
+#line 353 "scanner.l"
+{printf("%s Line %3d: Illegal character %s%s\n",KRED, yylineno,yytext,KNRM);}
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 138 "scanner.l"
+#line 355 "scanner.l"
 ECHO;
 	YY_BREAK
-#line 1289 "lex.yy.c"
+#line 1506 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(PREPROC):
 	yyterminate();
@@ -2290,13 +2507,13 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 138 "scanner.l"
+#line 355 "scanner.l"
 
 
 
 int main()
 {
-  yyin=fopen("testcases/test-case-5.c","r");
+  yyin=fopen("testcases/Testcase-5.c","r");
   symbol_table=create_table();
   constant_table=create_table();
   printf("%s\n=====================================================================================================%s\n",KCYN,KNRM);
