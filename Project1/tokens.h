@@ -39,6 +39,8 @@ enum operators
   LOGICAL_OR,
   LS_THAN_EQ,
   GR_THAN_EQ,
+  ADD_AND_ASS,
+  SUB_AND_ASS,
   EQ,
   NOT_EQ,
   ASSIGN,

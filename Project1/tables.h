@@ -18,6 +18,15 @@
 #include <limits.h>
 #include <string.h>
 
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT "\x1B[37m"
+
 #define HASH_TABLE_SIZE 100
 
 
@@ -67,21 +76,7 @@ struct node** create_table()
 
 
 //Create a node
-/*struct node* create_node()
-{
-	struct node *temp=(struct node*)malloc(sizeof(struct node));
-	if(temp==NULL)
-	{
-		printf("\nCannot allocate memory for a node");
-		exit(1);
-	}
-
-	
-	temp->next=NULL;
-	return temp;
-}*/
-
-struct node* create_entry( char *lexeme, int token_name )
+struct node* create( char *lexeme, int token_name )
 {
 	struct node* newentry;
 
@@ -121,46 +116,8 @@ struct node* search( struct node** table_ptr , char* lexeme )
 		return ptr;
 } 
 
-/* Insert an entry into hash table */
-/*void insert( struct node** table_ptr , char* lexeme , int token )
-{
-	if( search( table_ptr , lexeme ) != NULL ) 
-		return;
 
-	uint32_t idx;
-
-	struct node* temp = NULL;
-
-	struct node* ptr;
-
-	temp = create_node();
-	
-	if(temp == NULL)
-	{
-		printf("Insert failed. New entry cannot be created.");
-		exit(1);
-	}
-	idx = get_hash (lexeme );
-
-	strcpy(temp->lexeme, lexeme);
-	
-	temp->token = token ; 
-
-	ptr = table_ptr[idx];
-
-	if(ptr==NULL)
-	{
-		table_ptr[idx] = temp;
-	}
-	else
-	{
-		temp->next = table_ptr[idx];
-		table_ptr[idx] = temp;
-	}
-
-	
-}*/
-
+//Insert a node into the hash table
 void insert( struct node** hash_table_ptr, char* lexeme, int token_name )
 {
 	if( search( hash_table_ptr, lexeme ) != NULL) // If lexeme already exists, don't insert, return
@@ -171,7 +128,7 @@ void insert( struct node** hash_table_ptr, char* lexeme, int token_name )
 	struct node* head = NULL;
 
 	idx = get_hash( lexeme ); // Get the index for this lexeme based on the hash function
-	newentry = create_entry( lexeme, token_name ); // Create an entry using the <lexeme, token> pair
+	newentry = create( lexeme, token_name ); // Create an entry using the <lexeme, token> pair
 
 	if(newentry == NULL) // In case there was some error while executing create_entry()
 	{
@@ -200,11 +157,11 @@ void display ( struct node** table_ptr)
 
 	struct node* ptr;
 
-	printf("\n==========================================\n");
+	printf("%s\n=====================================================================================================\n",KCYN);
 
-    	printf("\t < lexeme , token >\n");
+    	printf("%s\n\t%-50s %-50s\n",KYEL,"Token", "Token type");
 
-    	printf("==========================================\n");
+    	printf("%s=====================================================================================================\n%s\n",KCYN,KNRM);
 
 	for ( i = 0 ; i < HASH_TABLE_SIZE ; i++ )
 	{
@@ -212,13 +169,23 @@ void display ( struct node** table_ptr)
 
 		while( ptr != NULL )
 		{
-			printf("< %-30s, %3d >\n", ptr->lexeme,  ptr->token);
+			char token_type[100];
+			if(ptr->token==500)
+				strcpy(token_type,"IDENTIFIER");
+			else if(ptr->token==400)
+				strcpy(token_type,"HEX_CONSTANT");
+			else if(ptr->token==401)
+				strcpy(token_type,"DEC_CONSTANT");
+			else if(ptr->token=402)
+				strcpy(token_type,"HEADER FILE");
+			else if(ptr->token=403)
+				strcpy(token_type,"STRING");	
+			printf("\t%-50s %-50s \n", ptr->lexeme,  token_type);
 			
 			ptr = ptr->next;
 		}
 	}
 
 	
-	printf("==========================================\n");
 }
 

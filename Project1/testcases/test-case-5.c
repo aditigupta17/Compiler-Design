@@ -22,7 +22,7 @@ The output should display appropriate tokens with their type and also the symbol
 
 int main()
 {
-  int x, y;
+  int 9x, y;
   long long int total, diff;
   int *ptr;
   unsigned int a = 0x0f;
@@ -33,7 +33,7 @@ int main()
     printf("%d",i);
     }
   }
-  x = -10, y = 20;
+  x += -10, y = 20;
   x=x*3/2;
   total = x + y;
   diff = x - y;
