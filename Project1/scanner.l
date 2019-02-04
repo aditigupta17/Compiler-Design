@@ -356,7 +356,7 @@ BID		([0-9]|!|@|#|$|%)+([a-zA-Z0-9])+
 
 int main()
 {
-  yyin=fopen("testcases/Testcase-5.c","r");
+  yyin=fopen("testcases/Testcase-1.c","r");
   symbol_table=create_table();
   constant_table=create_table();
   printf("%s\n=====================================================================================================%s\n",KCYN,KNRM);
