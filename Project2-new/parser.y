@@ -163,7 +163,7 @@ declaration_list: declaration_list ',' sub_decl
 		|sub_decl;
 
 sub_decl: assignment_expr
-    |IDENTIFIER                     {$1 -> data_type = current_dtype;}
+    |IDENTIFIER                    
     |array_index
     /*|struct_block ';'*/
     ;
@@ -174,40 +174,40 @@ expression_stmt:expression ';'
     ;
 
 expression:
-    expression ',' sub_expr								{$$ = $1,$3;}
-    |sub_expr		                                    {$$ = $1;}
+    expression ',' sub_expr								
+    |sub_expr		                                    
 		;
 
 sub_expr:
-    sub_expr '>' sub_expr						{$$ = ($1 > $3);}
-    |sub_expr '<' sub_expr						{$$ = ($1 < $3);}
-    |sub_expr EQ sub_expr						{$$ = ($1 == $3);}
-    |sub_expr NOT_EQ sub_expr                   {$$ = ($1 != $3);}
-    |sub_expr LS_EQ sub_expr                    {$$ = ($1 <= $3);}
-    |sub_expr GR_EQ sub_expr                    {$$ = ($1 >= $3);}
-	|sub_expr LOGICAL_AND sub_expr              {$$ = ($1 && $3);}
-	|sub_expr LOGICAL_OR sub_expr               {$$ = ($1 || $3);}
-	|'!' sub_expr                               {$$ = (!$2);}
-	|arithmetic_expr							{$$ = $1;}
-    |assignment_expr                            {$$ = $1;}
-	|unary_expr                                 {$$ = $1;}
+    sub_expr '>' sub_expr						
+    |sub_expr '<' sub_expr						
+    |sub_expr EQ sub_expr						
+    |sub_expr NOT_EQ sub_expr                   
+    |sub_expr LS_EQ sub_expr                    
+    |sub_expr GR_EQ sub_expr                    
+	|sub_expr LOGICAL_AND sub_expr          
+	|sub_expr LOGICAL_OR sub_expr           
+	|'!' sub_expr                           
+	|arithmetic_expr			
+    |assignment_expr                            
+	|unary_expr                             
     ;
 
 
-assignment_expr :lhs assign_op arithmetic_expr     {$$ = $1->value = Evaluate($1->value,$2,$3);}
-    |lhs assign_op array_index                     {$$ = 0;}
-    |lhs assign_op function_call                   {$$ = 0;}
-	|lhs assign_op unary_expr                      {$$ = $1->value = Evaluate($1->value,$2,$3);}
-	|unary_expr assign_op unary_expr               {$$ = 0;}
+assignment_expr :lhs assign_op arithmetic_expr     
+    |lhs assign_op array_index                     
+    |lhs assign_op function_call                   
+	|lhs assign_op unary_expr                      
+	|unary_expr assign_op unary_expr               
     ;
 
-unary_expr:	lhs INCREMENT                          {$$ = $1->value = ($1->value)++;}
-	|lhs DECREMENT                                 {$$ = $1->value = ($1->value)--;}
-	|DECREMENT lhs                                 {$$ = $2->value = --($2->value);}
-	|INCREMENT lhs                                 {$$ = $2->value = ++($2->value);}
+unary_expr:	lhs INCREMENT                          
+	|lhs DECREMENT                                 
+	|DECREMENT lhs                                 
+	|INCREMENT lhs                                 
 	;
 
-lhs:IDENTIFIER                                     {$$ = $1; if(! $1->data_type) $1->data_type = current_dtype;}
+lhs:IDENTIFIER                                     {$1->value = current_dtype;}
     //|array_index
     ;
 
@@ -219,20 +219,19 @@ assign_op:'='                                      {$$ = '=';}
     |MOD_ASSIGN                                    {$$ = MOD_ASSIGN;}
     ;
 
-arithmetic_expr: arithmetic_expr '+' arithmetic_expr    {$$ = $1 + $3;}
-    |arithmetic_expr '-' arithmetic_expr                {$$ = $1 - $3;}
-    |arithmetic_expr '*' arithmetic_expr                {$$ = $1 * $3;}
-    |arithmetic_expr '/' arithmetic_expr                {$$ = ($3 == 0) ? yyerror("Divide by 0!") : ($1 / $3);}
-	|arithmetic_expr '%' arithmetic_expr                {$$ = (int)$1 % (int)$3;}
-	|'(' arithmetic_expr ')'                            {$$ = $2;}
-    |'-' arithmetic_expr %prec UMINUS                   {$$ = -$2;}
-    |IDENTIFIER                                         {$$ = $1 -> value;}
-    |constant                                           {$$ = $1;}
+arithmetic_expr: arithmetic_expr '+' arithmetic_expr    
+    |arithmetic_expr '-' arithmetic_expr                
+    |arithmetic_expr '*' arithmetic_expr                
+    |arithmetic_expr '/' arithmetic_expr                
+	|arithmetic_expr '%' arithmetic_expr            
+	|'(' arithmetic_expr ')'                        
+    |'-' arithmetic_expr %prec UMINUS                   
+    |IDENTIFIER                                         
+    |constant                                           
     ;
 
-constant: DEC_CONSTANT                                  {$$ = $1;}
-    |HEX_CONSTANT                                       {$$ = $1;}
-    ;
+constant: DEC_CONSTANT                                  
+    |HEX_CONSTANT                                           ;
 
 array_index: IDENTIFIER '[' sub_expr ']'		{$1->dimension = $3;}
 
@@ -288,8 +287,13 @@ int main(int argc, char *argv[])
    	printf("SHORT - %d\n",SHORT);
 	printf("LONG - %d\n",LONG);
 	printf("LONG LONG- %d\n",LONG_LONG);
+	printf("VOID- %d\n",VOID);
 	printf("\n\tSymbol table");
 	display(symbol_table);
+	printf("HEX CONSTANT - %d\n",HEX_CONSTANT);
+	printf("DEC CONSTANT - %d\n",DEC_CONSTANT);
+	printf("\n\tConstant table");
+	display(constant_table);
 
 
 	fclose(yyin);

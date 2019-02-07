@@ -13,7 +13,6 @@ struct entry_s
 {
 	char* lexeme;
 	double value;
-	int data_type;
 	int dimension;
 	int function_flag;
 	int parameter_flag;
@@ -81,6 +80,7 @@ entry_t *create_entry( char *lexeme, int value )
 	newentry->dimension = 0;
 	newentry->function_flag = 0;
 	newentry->successor = NULL;
+	newentry->parameter_flag = 0;
 
 	return newentry;
 }
@@ -152,9 +152,9 @@ void display(entry_t** hash_table_ptr)
 
 	
 	
-    printf("\n====================================================\n");
-    printf(" %-20s %-20s %-20s %-20s\n","lexeme","value","data-type", "dimension", "Function Flag");
-    printf("====================================================\n");
+    printf("\n===================================================================================================\n");
+    printf(" %-20s %-20s %-20s %-20s %-20s\n","lexeme","data-type", "dimension", "Function Flag", "Parameter Flag");
+    printf("===================================================================================================\n");
 
 	for( i=0; i < HASH_TABLE_SIZE; i++)
 	{
@@ -162,10 +162,10 @@ void display(entry_t** hash_table_ptr)
 
 		while( traverser != NULL)
 		{
-			printf(" %-20s %-20d %-20d %-20d %-20d %-20d\n", traverser->lexeme, (int)traverser->value, traverser->data_type, traverser->dimension, traverser->function_flag,traverser->parameter_flag);
+			printf(" %-20s %-20d %-20d %-20d %-20d\n", traverser->lexeme, (int)traverser->value, traverser->dimension, traverser->function_flag,traverser->parameter_flag);
 			traverser = traverser->successor;
 		}
 	}
-    printf("====================================================\n");
+    printf("===================================================================================================\n");
 
 }

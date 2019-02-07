@@ -57,11 +57,11 @@ BID		([0-9]|!|@|#|$|%)+([a-zA-Z0-9])+
 "else"                            {return ELSE;}
 "return"                          {return RETURN;}
 
-{identifier}                      {yylval.entry = insert(symbol_table, yytext, INT_MAX); return  IDENTIFIER;}				
+{identifier}                      {yylval.entry = insert(symbol_table, yytext, IDENTIFIER); return  IDENTIFIER;}				
 
 {ws}                              ;
 
-[+\-]?[0][x|X]{hex}+[lLuU]?        { yylval.dval = (int)strtol(yytext, NULL, 16); return  HEX_CONSTANT;}
+[+\-]?[0][x|X]{hex}+[lLuU]?        { yylval.dval = (int)strtol(yytext, NULL, 16); entry_t* t =insert(constant_table,yytext,HEX_CONSTANT); return  HEX_CONSTANT;}
 [+\-]?{digit}+[lLuU]?              {yylval.dval = atoi(yytext);insert( constant_table,yytext,DEC_CONSTANT);
 					return DEC_CONSTANT;}
 "/*"                              {cmnt_strt = yylineno; BEGIN CMNT;}

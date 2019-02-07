@@ -986,7 +986,7 @@ YY_RULE_SETUP
 case 15:
 YY_RULE_SETUP
 #line 60 "scanner.l"
-{yylval.entry = insert(symbol_table, yytext, INT_MAX); return  IDENTIFIER;}				
+{yylval.entry = insert(symbol_table, yytext, IDENTIFIER); return  IDENTIFIER;}				
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
@@ -996,7 +996,7 @@ YY_RULE_SETUP
 case 17:
 YY_RULE_SETUP
 #line 64 "scanner.l"
-{ yylval.dval = (int)strtol(yytext, NULL, 16); return  HEX_CONSTANT;}
+{ yylval.dval = (int)strtol(yytext, NULL, 16); entry_t* t =insert(constant_table,yytext,HEX_CONSTANT); return  HEX_CONSTANT;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
