@@ -1,0 +1,10 @@
+0: main:
+1: c = 5
+2: i = 0
+3: if i < 10 goto 7
+4: goto 9
+5: i++
+6: goto 3
+7: c += 2
+8: goto 5
+9: exit
